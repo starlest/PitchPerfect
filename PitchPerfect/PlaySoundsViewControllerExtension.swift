@@ -38,7 +38,6 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
     }
     
     func playSound(rate rate: Float? = nil, pitch: Float? = nil, echo: Bool = false, reverb: Bool = false) {
-        
         // initialize audio engine components
         audioEngine = AVAudioEngine()
         
@@ -46,6 +45,12 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         audioPlayerNode = AVAudioPlayerNode()
         audioEngine.attachNode(audioPlayerNode)
         
+        setupNodes(rate, pitch: pitch, echo: echo, reverb: reverb)
+        scheduleAudioPlayerNode(rate)
+        playAudio()
+    }
+    
+    private func setupNodes(rate: Float?, pitch: Float?, echo: Bool, reverb: Bool) {
         // node for adjusting rate/pitch
         let changeRatePitchNode = AVAudioUnitTimePitch()
         if let pitch = pitch {
@@ -67,7 +72,6 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         reverbNode.wetDryMix = 50
         audioEngine.attachNode(reverbNode)
         
-        // connect nodes
         if echo == true && reverb == true {
             connectAudioNodes(audioPlayerNode, changeRatePitchNode, echoNode, reverbNode, audioEngine.outputNode)
         } else if echo == true {
@@ -77,8 +81,9 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         } else {
             connectAudioNodes(audioPlayerNode, changeRatePitchNode, audioEngine.outputNode)
         }
-        
-        // schedule to play and start the engine!
+    }
+    
+    private func scheduleAudioPlayerNode(rate: Float?) {
         audioPlayerNode.stop()
         audioPlayerNode.scheduleFile(audioFile, atTime: nil) {
             
@@ -97,7 +102,9 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
             self.stopTimer = NSTimer(timeInterval: delayInSeconds, target: self, selector: "stopAudio", userInfo: nil, repeats: false)
             NSRunLoop.mainRunLoop().addTimer(self.stopTimer!, forMode: NSDefaultRunLoopMode)
         }
-        
+    }
+    
+    private func playAudio() {
         do {
             try audioEngine.start()
         } catch {
